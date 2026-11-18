@@ -1,0 +1,76 @@
+<!DOCTYPE html> <!-- le avisa al navegador que esto es una página web moderna -->
+<html lang="es"> <!-- empieza la página y dice que está en español -->
+<head> <!-- aquí va la configuración que no se ve en pantalla -->
+  <meta charset="UTF-8"> <!-- para que salgan bien las tildes y la ñ -->
+  <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- para que se vea bien en el celular -->
+  <title>Registro · DCR</title> <!-- el texto que sale en la pestaña del navegador -->
+  <style> /* aquí empiezan los estilos: colores, tamaños, bordes */
+    :root { --naranja: #F28C00; --negro: #111111; --blanco: #FFFFFF; --gris: #6B6B6B; } /* guardamos los colores de DCR para usarlos abajo */
+    * { box-sizing: border-box; } /* hace que nada se desborde de su caja */
+    body { margin: 0; min-height: 100vh; padding: 16px; display: flex; align-items: center; justify-content: center; background: var(--negro); color: var(--negro); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; } /* fondo negro y todo centrado */
+    .tarjeta { width: 100%; max-width: 420px; background: var(--blanco); border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); } /* la tarjeta blanca donde va el formulario */
+    .cabecera { padding: 22px 20px 18px; text-align: center; border-bottom: 6px solid var(--naranja); } /* la parte de arriba con el logo y la franja naranja */
+    .cabecera img { max-width: 190px; max-height: 80px; } /* tamaño máximo del logo para que no se vea gigante */
+    h1 { margin: 10px 0 0; font-size: 1.4rem; } /* el título "Registro" */
+    .sub { margin: 4px 0 0; color: var(--gris); font-size: .9rem; } /* el texto chiquito debajo del título */
+    form { padding: 22px 20px 24px; } /* espacio por dentro del formulario */
+    label { display: block; margin: 0 0 6px; font-weight: 600; } /* el nombre de cada campo, en negrita */
+    input { width: 100%; margin: 0 0 16px; padding: 12px; font-size: 16px; border: 2px solid #DDDDDD; border-radius: 10px; } /* las cajitas para escribir (16px evita que el iPhone haga zoom) */
+    input:focus { outline: none; border-color: var(--naranja); } /* al tocar una cajita, el borde se pone naranja */
+    button { width: 100%; padding: 14px; font-size: 1rem; font-weight: 700; color: var(--blanco); background: var(--naranja); border: 0; border-radius: 10px; cursor: pointer; } /* el botón naranja grande */
+    button:disabled { opacity: .6; cursor: wait; } /* el botón se ve apagado mientras se envía */
+    .msg { display: none; margin: 14px 0 0; padding: 12px; border-radius: 10px; text-align: center; font-weight: 600; } /* la cajita del mensaje, escondida al inicio */
+    .msg.ok { display: block; background: #E8F7EC; color: #1B6B34; } /* versión verde para "Guardado" */
+    .msg.error { display: block; background: #FDECEC; color: #A61B1B; } /* versión roja para los errores */
+  </style> <!-- terminan los estilos -->
+</head> <!-- termina la configuración -->
+<body> <!-- desde aquí empieza lo que se ve -->
+  <main class="tarjeta"> <!-- la tarjeta blanca -->
+    <header class="cabecera"> <!-- la parte de arriba -->
+      <img src="logo.png" alt="DCR Minería y Construcción" onerror="this.remove()"> <!-- el logo; si todavía no subes logo.png, se esconde solo -->
+      <h1>Registro</h1> <!-- el título del formulario -->
+      <p class="sub">DCR Minería y Construcción</p> <!-- el nombre de la empresa debajo -->
+    </header> <!-- termina la parte de arriba -->
+    <form id="formulario"> <!-- empieza el formulario -->
+      <label for="nombres">Nombres *</label> <!-- el texto "Nombres" (el * es porque es obligatorio) -->
+      <input id="nombres" name="nombres" type="text" maxlength="80" autocomplete="given-name" required> <!-- la cajita para los nombres; required = no deja enviar vacío -->
+      <label for="apellidos">Apellidos *</label> <!-- el texto "Apellidos" -->
+      <input id="apellidos" name="apellidos" type="text" maxlength="80" autocomplete="family-name" required> <!-- la cajita para los apellidos -->
+      <button id="boton" type="submit">Enviar</button> <!-- el botón para mandar los datos -->
+      <p id="mensaje" class="msg" role="status"></p> <!-- aquí aparece "✅ Guardado" o el error -->
+    </form> <!-- termina el formulario -->
+  </main> <!-- termina la tarjeta -->
+  <script> // aquí empieza la parte que hace funcionar el botón
+    const URL_SCRIPT = 'PEGA_AQUI_TU_URL_EXEC'; // 👈 aquí va la URL /exec de tu Apps Script (no es secreta, puede estar en público)
+    const formulario = document.getElementById('formulario'); // agarra el formulario
+    const boton = document.getElementById('boton'); // agarra el botón
+    const mensaje = document.getElementById('mensaje'); // agarra la cajita del mensaje
+    function mostrar(texto, tipo) { // función para mostrar un mensaje verde o rojo
+      mensaje.textContent = texto; // pone el texto del mensaje
+      mensaje.className = 'msg ' + tipo; // le pone el color: 'ok' (verde) o 'error' (rojo)
+    } // termina la función
+    formulario.addEventListener('submit', async (evento) => { // esto pasa cuando aprietan "Enviar"
+      evento.preventDefault(); // evita que la página se recargue sola
+      if (!URL_SCRIPT.startsWith('https://script.google.com/')) { // si todavía no pegaste la URL del script...
+        mostrar('❌ Falta pegar la URL del script en index.html', 'error'); // ...avisa con un error
+        return; // ...y no sigue
+      } // fin del chequeo
+      boton.disabled = true; // apaga el botón para que no lo aprieten dos veces
+      boton.textContent = 'Enviando...'; // cambia el texto del botón
+      try { // intenta mandar los datos
+        const datos = new URLSearchParams(new FormData(formulario)); // junta lo que escribieron: nombres=...&apellidos=...
+        const respuesta = await fetch(URL_SCRIPT, { method: 'POST', body: datos }); // los manda a Google y espera la respuesta
+        const resultado = await respuesta.json(); // lee lo que contestó el script
+        if (!resultado.ok) throw new Error(resultado.error || 'Error desconocido'); // si el script dijo que algo falló, salta al error
+        mostrar('✅ Guardado', 'ok'); // todo bien: muestra el mensaje verde
+        formulario.reset(); // limpia las cajitas
+      } catch (error) { // si algo falló (sin internet, URL mala, etc.)
+        mostrar('❌ No se pudo guardar: ' + error.message, 'error'); // muestra el mensaje rojo con el motivo
+      } finally { // pase lo que pase, al final...
+        boton.disabled = false; // ...vuelve a prender el botón
+        boton.textContent = 'Enviar'; // ...y le devuelve su texto
+      } // fin del intento
+    }); // fin de lo que pasa al enviar
+  </script> <!-- termina la parte que hace funcionar el botón -->
+</body> <!-- termina lo que se ve -->
+</html> <!-- termina la página -->
